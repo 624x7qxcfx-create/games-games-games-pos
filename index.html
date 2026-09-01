@@ -621,7 +621,7 @@ body{
 <div class="app">
 <header>
   <div class="brand">GAMES! GAMES! GAMES!</div>
-  <div class="sub">Safari Checkout • Inventory • Daily Sales</div><div style="font-size:10px;color:#93c5fd;font-weight:900;margin-top:4px">EXCEL SYNC • GAMES! GAMES! GAMES! POS v47.5 SAFE SOLD COMP PRICING</div>
+  <div class="sub">Safari Checkout • Inventory • Daily Sales</div><div style="font-size:10px;color:#93c5fd;font-weight:900;margin-top:4px">EXCEL SYNC • GAMES! GAMES! GAMES! POS v47.6 SELF-CHECK SOLD COMP PRICING</div>
   <div class="stats">
     <div class="stat"><div class="label">CUSTOMER TOTAL</div><div class="value" id="total">$0.00</div></div>
     <div class="stat"><div class="label">PROFIT</div><div class="value" id="profit">$0.00</div></div>
@@ -720,7 +720,7 @@ body{
   </div>
 </section>
 
-<section id="tradeInView" class="hidden">
+<section id="tradeInView" class="hidden"><div class="msg ok full" style="font-weight:900">FRONTEND v47.6 LOADED — sold pricing self-check enabled</div>
   <div class="panel">
     <h2>Buy / Trade-In</h2>
     <div class="msg">Use this section when buying games or giving members Trade-In Credit. Purchased items stay in Pending Inventory until you add them to OrcaScan + your master Excel file.</div>
@@ -1310,7 +1310,7 @@ body{
     <div id="correctTransactionMsg" class="msg"></div>
   </div>
 </div>
-<section id="settingsView" class="hidden"><h2>Settings</h2><div class="v41section"><div class="v41sectiontitle">Business & POS</div><label class="v41small">Business Name</label><input id="settingBusinessName"><label class="v41small">Default Sale Channel</label><select id="settingDefaultChannel"><option value="Saturday">Saturday Booth</option><option value="Sunday">Sunday Booth</option><option value="Meetup">Weekday Meetup</option><option value="Mercari">Mercari</option></select></div><div class="v41section"><div class="v41sectiontitle">Data Protection</div><div class="v41alert"><span>Last backup</span><b id="settingsLastBackup">Never</b></div><div class="v41alert"><span>Transactions</span><b id="settingsTxCount">0</b></div><div class="v41alert"><span>Pending purchases</span><b id="settingsPendingCount">0</b></div><button id="settingsBackupBtn" class="btn primary" style="width:100%">BACKUP POS DATA NOW</button><div id="settingsBackupWarning" class="msg"></div></div><div class="v41section"><div class="v41sectiontitle">eBay Sold Comps Pricing</div><div class="v41alert"><span>Source</span><b>Completed eBay sold listings</b></div><label class="v41small">Sold-Comps Backend URL</label><div class="msg">POS pricing build: <b>v47.5 safe-comp pricing</b></div>
+<section id="settingsView" class="hidden"><h2>Settings</h2><div class="v41section"><div class="v41sectiontitle">Business & POS</div><label class="v41small">Business Name</label><input id="settingBusinessName"><label class="v41small">Default Sale Channel</label><select id="settingDefaultChannel"><option value="Saturday">Saturday Booth</option><option value="Sunday">Sunday Booth</option><option value="Meetup">Weekday Meetup</option><option value="Mercari">Mercari</option></select></div><div class="v41section"><div class="v41sectiontitle">Data Protection</div><div class="v41alert"><span>Last backup</span><b id="settingsLastBackup">Never</b></div><div class="v41alert"><span>Transactions</span><b id="settingsTxCount">0</b></div><div class="v41alert"><span>Pending purchases</span><b id="settingsPendingCount">0</b></div><button id="settingsBackupBtn" class="btn primary" style="width:100%">BACKUP POS DATA NOW</button><div id="settingsBackupWarning" class="msg"></div></div><div class="v41section"><div class="v41sectiontitle">eBay Sold Comps Pricing</div><div class="v41alert"><span>Source</span><b>Completed eBay sold listings</b></div><label class="v41small">Sold-Comps Backend URL</label><div class="msg">POS pricing build: <b>v47.6 SELF-CHECK — frontend loaded</b></div>
           <input id="settingMarketPricingEndpoint" placeholder="Paste your Google Apps Script /exec URL"><div class="msg">Your CompSniper API key stays in the secure backend and is never stored in this public POS HTML.</div><button id="testMarketPricingBtn" class="btn secondary" type="button" style="width:100%;margin-top:8px">Test Automatic Pricing Connection</button><div id="marketPricingSettingsStatus" class="msg"></div></div><div class="v41section"><div class="v41sectiontitle">Receipt</div><label class="v41small">Receipt Footer</label><input id="settingReceiptFooter"><button id="saveSettingsBtn" class="btn paid" style="width:100%">Save Settings</button><div id="settingsSaved" class="msg"></div></div></section><button id="jumpBottomBtn" class="btn secondary" type="button">↓ Jump to Bottom</button>
 <nav class="v41nav"><button data-view="homeView" class="tab active"><span class="navicon">⌂</span>Home</button><button class="tab" data-view="checkoutView"><span class="navicon">▣</span>Checkout</button><button class="tab" data-view="tradeInView"><span class="navicon">↔</span>Trade In</button><button class="tab" data-view="inventoryView"><span class="navicon">▤</span>Inventory</button><button class="tab" data-view="salesView"><span class="navicon">$</span>Sales</button><button class="tab" data-view="statisticsView"><span class="navicon">▥</span>Stats</button><button class="tab" data-view="membersView"><span class="navicon">👥</span>Members</button><button class="tab" data-view="settingsView"><span class="navicon">⚙</span>Settings</button></nav>
 </div>
@@ -2487,8 +2487,18 @@ async function getAutomaticMarketPrice(){
     u.searchParams.set('console',consoleName);
     u.searchParams.set('condition',tradeMarketCondition());
     u.searchParams.set('region',marketPricingRegion());
+    u.searchParams.set('_build','47.6-'+Date.now());
 
     const d=await soldCompsBridge(u.toString(),45000);
+
+    const receivedBackendVersion=String(d?.backendVersion||d?.version||'unknown');
+    if(receivedBackendVersion!=='1.8-self-check'){
+      throw new Error(
+        'OUTDATED BACKEND DETECTED. Expected 1.8-self-check but received '+
+        receivedBackendVersion+
+        '. Deploy the new backend as a NEW VERSION in Google Apps Script.'
+      );
+    }
 
     if(!d || d.ok!==true){
       if(d?.manualReview){
